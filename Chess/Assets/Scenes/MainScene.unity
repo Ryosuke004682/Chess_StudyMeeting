@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
+  m_IndirectSpecularColor: {r: 0.17276844, g: 0.21589246, b: 0.2978263, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -141,7 +141,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &33494256
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -596,14 +596,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 961022129}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0.2588191, y: 0, z: 0, w: 0.9659258}
+  m_LocalPosition: {x: -0.5, y: 4, z: -8.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 30, y: 0, z: 0}
 --- !u!114 &961022133
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1207,14 +1207,14 @@ Light:
   serializedVersion: 10
   m_Type: 1
   m_Shape: 0
-  m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
-  m_Intensity: 1
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Intensity: 5
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 2
+    m_Type: 1
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -1247,7 +1247,7 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingLayerMask: 1
-  m_Lightmapping: 4
+  m_Lightmapping: 2
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
@@ -1265,14 +1265,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1784509048}
-  m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
-  m_LocalPosition: {x: 0, y: 3, z: 0}
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 10, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 3
-  m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!1 &2128554782
 GameObject:
   m_ObjectHideFlags: 0
@@ -1322,16 +1322,16 @@ MonoBehaviour:
   - {fileID: 343479982173043674, guid: ab0929d057281c749aca1b1c8f3ea8e0, type: 3}
   prefabCursor: {fileID: 5748666227747927315, guid: 7dc054cbd1c6bd8449a47085e0d66e7c, type: 3}
   prefab_WhiteUnits:
-  - {fileID: 507521834456818622, guid: 979d5d6307dab5949bf86205a67f6043, type: 3}
-  - {fileID: 7297750927187354320, guid: 5bd490cee1ca5544288e16baa42f9e6f, type: 3}
-  - {fileID: 8862390977069797835, guid: fccf10dd6ee1b654bb965e296de7f0e6, type: 3}
   - {fileID: 6288244984105049012, guid: 1da5af1fad023d94ab6df1720c7f1fa5, type: 3}
-  - {fileID: 1977588375617858996, guid: bae4e9d97eb77a646bf73ed4dc4b7fd9, type: 3}
   - {fileID: 7128966047346565367, guid: 5101b89efa399754c80545488e731744, type: 3}
+  - {fileID: 8862390977069797835, guid: fccf10dd6ee1b654bb965e296de7f0e6, type: 3}
+  - {fileID: 507521834456818622, guid: 979d5d6307dab5949bf86205a67f6043, type: 3}
+  - {fileID: 1977588375617858996, guid: bae4e9d97eb77a646bf73ed4dc4b7fd9, type: 3}
+  - {fileID: 7297750927187354320, guid: 5bd490cee1ca5544288e16baa42f9e6f, type: 3}
   prefab_BlackUnits:
-  - {fileID: 5246674561084853087, guid: 206d5b4ef8e1f37439aaf946647c6278, type: 3}
-  - {fileID: 3469516843463312367, guid: f638c61204bb16a41a30c2b7b4733719, type: 3}
-  - {fileID: 7501320611585514234, guid: 196af04b0acbabb4384df17a1b97ed85, type: 3}
   - {fileID: 902489853630643496, guid: a21a38b5a7c67b442aab534859fc6d09, type: 3}
-  - {fileID: 2973712117001201446, guid: 7c4dfdc83ccb1fd42bf3e4d452e5fe91, type: 3}
   - {fileID: 4651646111410905183, guid: 000e1929f3158cd45bd2b7024820f6b4, type: 3}
+  - {fileID: 7501320611585514234, guid: 196af04b0acbabb4384df17a1b97ed85, type: 3}
+  - {fileID: 5246674561084853087, guid: 206d5b4ef8e1f37439aaf946647c6278, type: 3}
+  - {fileID: 2973712117001201446, guid: 7c4dfdc83ccb1fd42bf3e4d452e5fe91, type: 3}
+  - {fileID: 3469516843463312367, guid: f638c61204bb16a41a30c2b7b4733719, type: 3}
