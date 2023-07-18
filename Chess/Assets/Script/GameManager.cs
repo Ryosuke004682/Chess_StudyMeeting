@@ -40,9 +40,29 @@ public class GameManager : MonoBehaviour
         { 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
     };
 
+    //UI関連
+    GameObject   textTurnInfo;
+    GameObject textResultInfo;
+    GameObject    buttonApply;
+    GameObject   buttonCancel;
+
+    //選択ユニット
+    UnitsController selectUnit;
+
 
     private void Start()
     {
+        //UIオブジェクト
+        textTurnInfo   = GameObject.Find("TextTurnInfo"  );
+        textResultInfo = GameObject.Find("TextResultInfo");
+        buttonApply    = GameObject.Find("ButtonApply")   ;
+        buttonCancel   = GameObject.Find("ButtonCancel")  ;
+
+        //リザルト関連は非表示にする。
+        buttonApply .SetActive(false);
+        buttonCancel.SetActive(false);
+
+
         //内部データの初期化
         cells = new GameObject     [CELL_X, CELL_Y];
         units = new UnitsController[CELL_X, CELL_Y];
@@ -97,7 +117,67 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        GameObject      tile = null;
+        UnitsController unit = null;
         
+
+        //Playerの処理
+        if(Input.GetMouseButtonUp(0))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            //ユニットにも当たり判定があるからヒットしたすべてのオブジェクトの情報を取得
+            foreach(RaycastHit hit in Physics.RaycastAll(ray))
+            {
+                if (hit.transform.name.Contains("Board_Black") || hit.transform.name.Contains("Board_White")) 
+                {
+                    Debug.Log("当たってるよん");
+
+                    tile = hit.transform.gameObject;
+                    break;
+                }
+            }
+        }
+
+        if (null == tile) return;
+
+        //選んだタイルからユニット取得
+        Vector2Int tilepos = new Vector2Int((int) tile.transform.position.x + CELL_X / 2,
+                                            (int) tile.transform.position.z + CELL_Y / 2);
+
+        //ユニット
+        unit = units[tilepos.x, tilepos.y];
+
+        if(null != unit && null != selectUnit)
+        {
+            SetSelectCursors(unit);
+        }
+    }
+
+    //選択時の関数
+    void SetSelectCursors(UnitsController unit = null , bool setUnit = true)
+    {
+        //TODO カーソル解除
+        //選択ユニットの選択状態
+
+        if(null != selectUnit)
+        {
+            selectUnit.SelectUnit(false);
+            selectUnit = null;
+        }
+
+        //なにもセットされてないなら終了
+        if (null == unit) return;
+
+        // TODO カーソルの作成
+
+        //選択状態
+        if(setUnit)
+        {
+            selectUnit = unit;
+            selectUnit.SelectUnit();
+        }
+
     }
 
     //ユニットのプレハブを取得
