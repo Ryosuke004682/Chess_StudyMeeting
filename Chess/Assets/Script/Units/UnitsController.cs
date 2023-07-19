@@ -83,19 +83,33 @@ public class UnitsController : MonoBehaviour
         
         if(TYPE.PAWN == type)
         {
-            ret = GetNormalMovableTiles(units, type);
+            ret = GetNormalMovableTiles (units, type);
         }
-        else if(TYPE.ROOK == type)
+        else if (TYPE.ROOK   == type)
         {
-            ret = GetNormalMovableTiles(units , type);
+            ret = GetNormalMovableTiles (units , type);
         }
         else if (TYPE.KNIGHT == type)
         {
-            ret = GetNormalMovableTiles(units , type);
+            ret = GetNormalMovableTiles (units , type);
         }
-        else if(TYPE.BISHOP == type)
+        else if (TYPE.BISHOP == type)
         {
             ret = GetNormalMovableTiles (units , type);
+        }
+        else if (TYPE.KING   == type)
+        {
+            ret = GetNormalMovableTiles(units, type);
+
+            //相手の移動範囲を考慮しない。
+            if (!checkking) return ret;
+
+            //TODO 相手の移動可能範囲には行けないようにする。
+
+        }
+        else if(TYPE.QUEEN == type)
+        {
+            ret = GetNormalMovableTiles(units, type);
         }
 
         return ret;
@@ -162,7 +176,7 @@ public class UnitsController : MonoBehaviour
             }
         }
         //ルークの移動処理
-        else if (TYPE.ROOK == type)
+        else if (TYPE.ROOK   == type)
         {
             //上下ユニットにぶつかるまでどこにでも進む
             List<Vector2Int> vector = new List<Vector2Int>()
@@ -259,7 +273,77 @@ public class UnitsController : MonoBehaviour
                 }
             }
         }
+        //キングの移動処理
+        else if (TYPE.KING   == type)
+        {
+            List<Vector2Int> vector = new List<Vector2Int>()
+            {
+                new Vector2Int(-1  ,  1),
+                new Vector2Int( 0  ,  1),
+                new Vector2Int( 1  ,  1),
+                new Vector2Int(-1  ,  0),
 
+                new Vector2Int( 1  ,  0),
+                new Vector2Int(-1  , -1),
+                new Vector2Int( 0  , -1),
+                new Vector2Int( 1  , -1),
+            };
+
+            foreach (var n in vector)
+            {
+                Vector2Int checkPosition = position + n;
+
+                if (!isCheckable(units, checkPosition)) continue;
+
+                //同じPlayerの場所には行けない。
+                if (null != units[checkPosition.x, checkPosition.y]
+                         && player == units[checkPosition.x, checkPosition.y].player)
+                { continue; }
+
+                ret.Add(checkPosition);
+            }
+            // TODO : ここから下はキャスリングの処理
+
+        }
+        //クイーンの移動処理
+        else if(TYPE.QUEEN == type)
+        {
+            //斜めにぶつかるまでどこにでも進む
+            List<Vector2Int> vector = new List<Vector2Int>()
+            {
+                new Vector2Int(0  , 1),
+                new Vector2Int(0  ,-1),
+                new Vector2Int(1  , 0),
+                new Vector2Int(-1 , 0),
+
+                new Vector2Int(1  ,  1),
+                new Vector2Int(-1 ,  1),
+                new Vector2Int(1  , -1),
+                new Vector2Int(-1 , -1),
+
+            };
+
+            foreach (var n in vector)
+            {
+                var checkPosition = position + n;
+
+                while (isCheckable(units, checkPosition))
+                {
+                    //なんかいたら終了(味方だったら処理を抜ける)
+                    if (null != units[checkPosition.x, checkPosition.y])
+                    {
+                        //味方じゃなかったら、首を取れ
+                        if (player != units[checkPosition.x, checkPosition.y].player)
+                        {
+                            ret.Add(checkPosition);
+                        }
+                        break;
+                    }
+                    ret.Add(checkPosition);
+                    checkPosition += n;
+                }
+            }
+        }
 
         return ret;
     }
