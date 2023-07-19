@@ -1,6 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -22,14 +25,8 @@ public class GameManager : MonoBehaviour
     public List<GameObject> prefab_WhiteUnits;
     public List<GameObject> prefab_BlackUnits;
 
-    
-    //わかりずらいと思いますが下記を盤面だと見てください。
-    //Unitが何も居ないところは、「0」となっています。
-
     public int[,] unitsType =
     {
-// Player側の最後列                敵側の最後列
-//        ⇓                             ⇓
         { 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
         { 3 , 1 , 0 , 0 , 0 , 0 , 11 , 13 },
         { 4 , 1 , 0 , 0 , 0 , 0 , 11 , 14 },
@@ -47,7 +44,27 @@ public class GameManager : MonoBehaviour
     GameObject   buttonCancel;
 
     //選択ユニット
-    UnitsController selectUnit;
+    UnitsController selectUnit = null;
+
+    
+    //移動関連
+    List<Vector2Int> movableTiles;
+    List<GameObject> cursors;
+
+
+    //モード
+    enum MODE
+    {
+        NONE,
+        CHECK_MATE,
+        NORMAL,
+        STATUS_UPDATE,
+        TURN_CHANGE,
+        RESULT
+    }
+
+    MODE currentMode, nextMode;
+    int  currentPlayer;
 
 
     private void Start()
@@ -64,16 +81,17 @@ public class GameManager : MonoBehaviour
 
 
         //内部データの初期化
-        cells = new GameObject     [CELL_X, CELL_Y];
-        units = new UnitsController[CELL_X, CELL_Y];
+        cells   = new GameObject     [CELL_X, CELL_Y];
+        units   = new UnitsController[CELL_X, CELL_Y];
+        cursors = new List<GameObject>();
 
 
-        //盤面を生成する。
+        //盤面を生成
         for(var X_Axis = 0; X_Axis < CELL_X; X_Axis++)
         {
             for (var Y_Axis = 0; Y_Axis < CELL_Y; Y_Axis++)
             {
-                //タイルとユニットのポジションを生成する。
+
                 var x = X_Axis - CELL_X / 2;//横
                 var y = Y_Axis - CELL_Y / 2;//縦
 
@@ -81,10 +99,8 @@ public class GameManager : MonoBehaviour
                 var createPosition = new Vector3(x , 0 , y);
 
                 //タイルを生成
-                var index = (X_Axis + Y_Axis) % 2;//0と1を交互に指定
-
+                var index = (X_Axis + Y_Axis) % 2;
                 GameObject tiles = Instantiate(prefabTile[index] , createPosition , Quaternion.identity);
-
                 cells[X_Axis , Y_Axis] = tiles;
 
 
@@ -92,10 +108,9 @@ public class GameManager : MonoBehaviour
                 var type   = unitsType[X_Axis, Y_Axis] % 10;
                 var player = unitsType[X_Axis, Y_Axis] / 10;
 
-                GameObject      prefab     = GetPrefabUnit(player, type);
+                GameObject prefab = GetPrefabUnit(player, type);
 
 
-                //nullチェック
                 GameObject      unit       = null;
                 UnitsController controller = null;
 
@@ -113,26 +128,64 @@ public class GameManager : MonoBehaviour
                 units[X_Axis, Y_Axis] = controller;
             }
         }
+
+        currentPlayer = -1;
+        currentMode   = MODE.NONE;
+        nextMode      = MODE.TURN_CHANGE;
     }
 
     private void Update()
     {
+        if(MODE.CHECK_MATE         == currentMode)
+        {
+            CheckMateMode();
+        }
+        else if(MODE.NORMAL        == currentMode)
+        {
+            NormalMode();
+        }
+        else if(MODE.STATUS_UPDATE == currentMode)
+        {
+            StatusUpdateMode();
+        }
+        else if(MODE.TURN_CHANGE   == currentMode)
+        {
+            TurnChangeMode();
+        }
+
+        //モード変更
+        if(MODE.NONE != nextMode)
+        {
+            currentMode = nextMode;
+            nextMode    = MODE.NONE;
+        }
+    }
+
+    //チェックメイトモード
+    void CheckMateMode()
+    {
+        nextMode = MODE.NORMAL;
+    }
+
+    //ノーマルモード
+    private void NormalMode()
+    {
+
         GameObject      tile = null;
         UnitsController unit = null;
-        
+
 
         //Playerの処理
-        if(Input.GetMouseButtonUp(0))
+        if (Input.GetMouseButtonUp(0))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-            //ユニットにも当たり判定があるからヒットしたすべてのオブジェクトの情報を取得
-            foreach(RaycastHit hit in Physics.RaycastAll(ray))
+            //ヒットしたすべてのオブジェクトの情報を取得
+            foreach (RaycastHit hit in Physics.RaycastAll(ray))
             {
-                if (hit.transform.name.Contains("Board_Black") || hit.transform.name.Contains("Board_White")) 
+                if (hit.transform.name.Contains("Board_Black")
+                 || hit.transform.name.Contains("Board_White"))
                 {
-                    Debug.Log("当たってるよん");
-
                     tile = hit.transform.gameObject;
                     break;
                 }
@@ -142,23 +195,120 @@ public class GameManager : MonoBehaviour
         if (null == tile) return;
 
         //選んだタイルからユニット取得
-        Vector2Int tilepos = new Vector2Int((int) tile.transform.position.x + CELL_X / 2,
-                                            (int) tile.transform.position.z + CELL_Y / 2);
+        Vector2Int tilepos = new Vector2Int((int)tile.transform.position.x + CELL_X / 2,
+                                            (int)tile.transform.position.z + CELL_Y / 2);
 
         //ユニット
         unit = units[tilepos.x, tilepos.y];
 
-        if(null != unit && null != selectUnit)
+
+        if (null != unit && selectUnit != unit && currentPlayer == unit.player)
         {
+            List<Vector2Int> tiles = GetMovableTiles(unit);
+
+            if (1 > tiles.Count) return;
+
+
+            movableTiles = tiles;
             SetSelectCursors(unit);
         }
+        else if (null != selectUnit && movableTiles.Contains(tilepos))
+        {
+            MoveUnit(selectUnit, tilepos);
+            nextMode = MODE.STATUS_UPDATE;
+        }
+    }
+
+    
+    //移動後の処理
+    private void StatusUpdateMode()
+    {
+        //キャスティング
+
+        //アンパッサン
+
+        //プロモーション
+
+        //ターン経過
+        foreach(var n in GetUnits(currentPlayer))
+        {
+            n.ProgressTurn();//ターンを経過させる。
+        }
+
+        //カーソルを消す。
+        SetSelectCursors();
+        nextMode = MODE.TURN_CHANGE;
+    }
+
+    //ターン変更
+    private void TurnChangeMode()
+    {
+        //ターンの処理
+        currentPlayer = GetNextPlayer();
+
+        //Infoの更新
+        textTurnInfo.GetComponent<Text>().text = "" + (currentPlayer + 1) + "Pの番です。";
+
+        nextMode = MODE.CHECK_MATE;
+    }
+
+    //ターンの加算処理
+    int GetNextPlayer()
+    {
+        var next = currentPlayer + 1;
+
+        if (PLAYER_MAX <= next) next = 0;
+
+        return next;
+    }
+
+
+    //指定されたPlayer番号のユニットを取得する。
+    List<UnitsController> GetUnits(int player = -1)
+    {
+        List<UnitsController> ret = new List<UnitsController>();
+
+        foreach(var n in units)
+        {
+            if (null == n) continue;
+
+            if (player == n.player) { ret.Add(n); }
+
+            else if (0 > player)    { ret.Add(n); }
+        }
+        return ret;
+    }
+
+
+    //移動可能範囲の取得
+    List<Vector2Int> GetMovableTiles(UnitsController unit)
+    {
+        return unit.GetMovableTiles(units);
+    }
+
+
+    //ユニットの移動
+    void MoveUnit(UnitsController unit , Vector2Int tilepos)
+    {
+        Vector2Int unitPosition = unit.position;
+
+
+        if (null != units[tilepos.x, tilepos.y]) 
+        {
+            Destroy(units[tilepos.x, tilepos.y].gameObject);
+        }
+
+        unit.MoveUnit(cells[tilepos.x, tilepos.y]);
+
+
+        units[unitPosition.x, unitPosition.y] = null;
+        units[tilepos.x     , tilepos.y]      = unit;
     }
 
     //選択時の関数
     void SetSelectCursors(UnitsController unit = null , bool setUnit = true)
     {
-        //TODO カーソル解除
-        //選択ユニットの選択状態
+        foreach (var n in cursors) { Destroy(n); }
 
         if(null != selectUnit)
         {
@@ -166,18 +316,22 @@ public class GameManager : MonoBehaviour
             selectUnit = null;
         }
 
-        //なにもセットされてないなら終了
-        if (null == unit) return;
+        if (null == unit) { return; }
 
-        // TODO カーソルの作成
+        foreach(var n in GetMovableTiles(unit))
+        {
+            Vector3 position = cells[n.x, n.y].transform.position;
+            position.y += 0.07f;
 
-        //選択状態
+            GameObject  obj = Instantiate(prefabCursor , position , Quaternion.identity);
+            cursors.Add(obj);
+        }
+
         if(setUnit)
         {
             selectUnit = unit;
             selectUnit.SelectUnit();
         }
-
     }
 
     //ユニットのプレハブを取得

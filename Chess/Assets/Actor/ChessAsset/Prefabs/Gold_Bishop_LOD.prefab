@@ -442,3 +442,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e26c9384233bfc94fbf69432a766969a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  player: 0
+  type: 0
+  status: 
+  progressTurnCount: 0
+  position: {x: 0, y: 0}
+  oldPosition: {x: 0, y: 0}
