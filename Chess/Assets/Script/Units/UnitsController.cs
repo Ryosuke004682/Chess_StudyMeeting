@@ -89,6 +89,15 @@ public class UnitsController : MonoBehaviour
         {
             ret = GetNormalMovableTiles(units , type);
         }
+        else if (TYPE.KNIGHT == type)
+        {
+            ret = GetNormalMovableTiles(units , type);
+        }
+        else if(TYPE.BISHOP == type)
+        {
+            ret = GetNormalMovableTiles (units , type);
+        }
+
         return ret;
     }
 
@@ -152,9 +161,8 @@ public class UnitsController : MonoBehaviour
                 ret.Add(checkPosition);
             }
         }
-
-        // TODO : ルークの移動処理
-        if (TYPE.ROOK == type)
+        //ルークの移動処理
+        else if (TYPE.ROOK == type)
         {
             //上下ユニットにぶつかるまでどこにでも進む
             List<Vector2Int> vector = new List<Vector2Int>()
@@ -184,10 +192,72 @@ public class UnitsController : MonoBehaviour
                     }
                     ret.Add(checkPosition);
                     checkPosition += n;
-
                 }
             }
-            return ret;
+        }
+        //ナイトの移動処理
+        else if (TYPE.KNIGHT == type)
+        {
+            List<Vector2Int> vector = new List<Vector2Int>()
+            {
+                new Vector2Int(-1  ,  2),
+                new Vector2Int(-2  ,  1),
+                new Vector2Int( 1  ,  2),
+                new Vector2Int( 2  ,  1),
+
+                new Vector2Int(-1  , -2),
+                new Vector2Int(-2  , -1),
+                new Vector2Int( 1  , -2),
+                new Vector2Int( 2  , -1),
+            };
+
+            foreach(var n in vector)
+            {
+                Vector2Int checkPosition = position + n;
+
+                if (!isCheckable(units, checkPosition)) continue;
+
+                //同じPlayerの場所には行けない。
+                if (null != units[checkPosition.x, checkPosition.y]
+                         && player == units[checkPosition.x, checkPosition.y].player)
+                { continue; }
+
+                ret.Add(checkPosition);
+            }
+        }
+        //ビショップの移動処理
+        else if (TYPE.BISHOP == type)
+        {
+            //斜めにぶつかるまでどこにでも進む
+            List<Vector2Int> vector = new List<Vector2Int>()
+            {
+                new Vector2Int(1  ,  1),
+                new Vector2Int(-1 ,  1),
+                new Vector2Int(1  , -1),
+                new Vector2Int(-1 , -1),
+
+            };
+
+            foreach (var n in vector)
+            {
+                var checkPosition = position + n;
+
+                while (isCheckable(units, checkPosition))
+                {
+                    //なんかいたら終了(味方だったら処理を抜ける)
+                    if (null != units[checkPosition.x, checkPosition.y])
+                    {
+                        //味方じゃなかったら、首を取れ
+                        if (player != units[checkPosition.x, checkPosition.y].player)
+                        {
+                            ret.Add(checkPosition);
+                        }
+                        break;
+                    }
+                    ret.Add(checkPosition);
+                    checkPosition += n;
+                }
+            }
         }
 
 
