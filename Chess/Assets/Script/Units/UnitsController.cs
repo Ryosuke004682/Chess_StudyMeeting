@@ -59,6 +59,7 @@ public class UnitsController : MonoBehaviour
         progressTurnCount = -1;
     }
 
+
     //選択時の処理
     public void SelectUnit(bool select = true)
     {
@@ -76,42 +77,50 @@ public class UnitsController : MonoBehaviour
         transform.position = pos;
     }
 
+
     //移動可能範囲の取得
     public List<Vector2Int> GetMovableTiles(UnitsController[ , ] units , bool checkking = true)
     {
         List<Vector2Int> ret = new List<Vector2Int>();
-        
-        if(TYPE.PAWN == type)
+       
+        if(TYPE.QUEEN == type)
         {
-            ret = GetNormalMovableTiles (units, type);
+            ret = GetNormalMovableTiles(units, TYPE.ROOK);
+            
+            foreach(var n in GetNormalMovableTiles(units , TYPE.BISHOP))
+            {
+                if (!ret.Contains(n)) ret.Add(n);
+            }
         }
-        else if (TYPE.ROOK   == type)
+        else if (TYPE.KING == type)
         {
-            ret = GetNormalMovableTiles (units , type);
-        }
-        else if (TYPE.KNIGHT == type)
-        {
-            ret = GetNormalMovableTiles (units , type);
-        }
-        else if (TYPE.BISHOP == type)
-        {
-            ret = GetNormalMovableTiles (units , type);
-        }
-        else if (TYPE.KING   == type)
-        {
-            ret = GetNormalMovableTiles(units, type);
+            ret = GetNormalMovableTiles(units, TYPE.KING);
 
-            //相手の移動範囲を考慮しない。
-            if (!checkking) return ret;
+            if (!checkking){ return ret; }
 
-            //TODO 相手の移動可能範囲には行けないようにする。
+            //削除対象のタイル
+            List<Vector2Int> removetile = new List<Vector2Int>();
 
+
+            //敵の移動範囲まで行かせない
+            foreach (var n in ret)
+            {
+                UnitsController[,] copyunits2 = GameManager.GetCopyArracy(units);
+                copyunits2[position.x, position.y] = null;
+                copyunits2[n.x, n.y] = this;
+                var checkCount = GameManager.GetCheckUnits(copyunits2, player, false).Count;
+
+                if (0 < checkCount) removetile.Add(n);
+            }
+
+            //敵の移動可能範囲と被るタイルを消す
+            foreach (var n in removetile)
+            {
+                ret.Remove(n);
+
+                // TODO : キャスリングできる時だけ真横のタイルも全て削除する
+            }
         }
-        else if(TYPE.QUEEN == type)
-        {
-            ret = GetNormalMovableTiles(units, type);
-        }
-
         return ret;
     }
 
@@ -175,8 +184,9 @@ public class UnitsController : MonoBehaviour
                 ret.Add(checkPosition);
             }
         }
+        
         //ルークの移動処理
-        else if (TYPE.ROOK   == type)
+        if (TYPE.ROOK == type)
         {
             //上下ユニットにぶつかるまでどこにでも進む
             List<Vector2Int> vector = new List<Vector2Int>()
@@ -302,51 +312,13 @@ public class UnitsController : MonoBehaviour
 
                 ret.Add(checkPosition);
             }
-            // TODO : ここから下はキャスリングの処理
 
-        }
-        //クイーンの移動処理
-        else if(TYPE.QUEEN == type)
-        {
-            //斜めにぶつかるまでどこにでも進む
-            List<Vector2Int> vector = new List<Vector2Int>()
-            {
-                new Vector2Int(0  , 1),
-                new Vector2Int(0  ,-1),
-                new Vector2Int(1  , 0),
-                new Vector2Int(-1 , 0),
-
-                new Vector2Int(1  ,  1),
-                new Vector2Int(-1 ,  1),
-                new Vector2Int(1  , -1),
-                new Vector2Int(-1 , -1),
-
-            };
-
-            foreach (var n in vector)
-            {
-                var checkPosition = position + n;
-
-                while (isCheckable(units, checkPosition))
-                {
-                    //なんかいたら終了(味方だったら処理を抜ける)
-                    if (null != units[checkPosition.x, checkPosition.y])
-                    {
-                        //味方じゃなかったら、首を取れ
-                        if (player != units[checkPosition.x, checkPosition.y].player)
-                        {
-                            ret.Add(checkPosition);
-                        }
-                        break;
-                    }
-                    ret.Add(checkPosition);
-                    checkPosition += n;
-                }
-            }
+            //こっからキャスリングの処理
         }
 
         return ret;
     }
+
 
     bool isCheckable(UnitsController[ , ] array , Vector2Int index)
     {
@@ -356,7 +328,6 @@ public class UnitsController : MonoBehaviour
 
         return true;
     }
-
 
 
     //移動処理
@@ -412,6 +383,7 @@ public class UnitsController : MonoBehaviour
         progressTurnCount = 0;
     }
 
+
     //ターン数を加算する処理
     public void ProgressTurn()
     {
@@ -428,6 +400,7 @@ public class UnitsController : MonoBehaviour
         }
     }
 
+
     UnitsController GetEnPassantUnit(UnitsController[,] units, Vector2Int pos)
     {
         foreach (var n in units)
@@ -440,6 +413,7 @@ public class UnitsController : MonoBehaviour
         }
         return null;
     }
+
 
     public void SetCheckStatus(bool flag = true)
     {

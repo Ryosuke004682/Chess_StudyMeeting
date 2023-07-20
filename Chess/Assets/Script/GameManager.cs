@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEditor;
@@ -165,6 +166,69 @@ public class GameManager : MonoBehaviour
     void CheckMateMode()
     {
         nextMode = MODE.NORMAL;
+
+        Text info = textResultInfo.GetComponent<Text>();
+        info.text = "";
+
+        /*-------------------
+        TODO : ステイルメイトの処理（引き分けの処理）
+         --------------------*/
+
+        /*-------------------
+         チェックの判定
+         --------------------*/
+        UnitsController target = GetUnit(currentPlayer ,UnitsController.TYPE.KING);
+        //チェックしてるユニット
+        List<UnitsController> checkKunits = GetCheckUnits(units , currentPlayer);
+
+        bool isCheck = (0 < checkKunits.Count) ? true : false;
+
+        //チェック状態をセット
+        if(null != target)
+        {
+            target.SetCheckStatus(isCheck);
+        }
+
+        //ゲームが続くならチェックと表示
+        if(isCheck && MODE.RESULT != nextMode)
+        {
+            info.text = "チェック！！";
+        }
+
+
+        /*-------------------
+         移動可能範囲の判定
+         --------------------*/
+        var tileCount = 0;
+
+        foreach (var n in GetUnits(currentPlayer))
+        {
+            tileCount += GetMovableTiles(n).Count;
+        }
+
+        //ステイルメイトの時の処理
+        if(1 > tileCount)
+        {
+            info.text = $"ステイルメイト\n 引き分け～！";
+
+            //もしチェックされて動けなかった時は、チェックメイト
+            if(isCheck)
+            {
+                info.text = $"チェックメイト\n {GetNextPlayer() + 1} Pの勝利！!";
+            }
+
+            //チェックメイト後は、ゲーム辞退が終わりだから
+            nextMode = MODE.RESULT;
+        }
+
+        //リザルトボタンとかを出す
+        if(MODE.RESULT == nextMode)
+        {
+            buttonApply .SetActive(true);
+            buttonCancel.SetActive(true);
+        }
+
+
     }
 
     //ノーマルモード
@@ -192,13 +256,14 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        //タイル以外の場所は判定しない。
         if (null == tile) return;
 
         //選んだタイルからユニット取得
         Vector2Int tilepos = new Vector2Int((int)tile.transform.position.x + CELL_X / 2,
                                             (int)tile.transform.position.z + CELL_Y / 2);
 
-        //ユニット
+        //ユニットを取得
         unit = units[tilepos.x, tilepos.y];
 
 
@@ -263,7 +328,20 @@ public class GameManager : MonoBehaviour
     }
 
 
-    //指定されたPlayer番号のユニットを取得する。
+    //指定のユニットだけ取得する。
+    UnitsController GetUnit(int player , UnitsController.TYPE type)
+    {
+        foreach (var n in GetUnits(player))
+        {
+            if (player != n.player) continue;
+            if (type   == n.type)   return n;
+        }
+
+        return null;
+    }
+
+
+    //指定されたPlayer番号の複数のユニットを取得する。
     List<UnitsController> GetUnits(int player = -1)
     {
         List<UnitsController> ret = new List<UnitsController>();
@@ -279,10 +357,48 @@ public class GameManager : MonoBehaviour
         return ret;
     }
 
+    //指定された配列をコピーして返す。
+    public static UnitsController[,] GetCopyArracy(UnitsController[,] org)
+    {
+        UnitsController[,] ret = new UnitsController[org.GetLength(0), org.GetLength(1)];
+        Array.Copy(org , ret , org.Length);
+
+        return ret;
+    }
+
 
     //移動可能範囲の取得
     List<Vector2Int> GetMovableTiles(UnitsController unit)
     {
+        // チェックされてしまう場所には置かせない
+        UnitsController[,] copyunits1 = GetCopyArracy(units);
+        copyunits1[unit.position.x, unit.position.y] = null;
+
+        //チェックされているかどうか
+        List<UnitsController> checkunits = GetCheckUnits(copyunits1 , unit.player);
+
+        //チェックを回避できるタイルを探す
+        if(0 < checkunits.Count)
+        {
+            //移動可能範囲
+            List<Vector2Int> ret = new List<Vector2Int>();
+
+            List<Vector2Int> moveTile = unit.GetMovableTiles(units);
+
+            //移動する
+            foreach(var n in moveTile)
+            {
+                UnitsController[,] copyunits2 = GetCopyArracy(units);
+                copyunits2[unit.position.x, unit.position.y] = null;
+                copyunits2[n.x, n.y] = unit;
+                var checkCount = GetCheckUnits(copyunits2, unit.player, false).Count;
+
+                if (1 > checkCount) ret.Add(n);
+            }
+            return ret;
+        }
+
+        //通常移動可能範囲を返す。
         return unit.GetMovableTiles(units);
     }
 
@@ -305,6 +421,7 @@ public class GameManager : MonoBehaviour
         units[tilepos.x     , tilepos.y]      = unit;
     }
 
+    
     //選択時の関数
     void SetSelectCursors(UnitsController unit = null , bool setUnit = true)
     {
@@ -317,6 +434,7 @@ public class GameManager : MonoBehaviour
         }
 
         if (null == unit) { return; }
+
 
         foreach(var n in GetMovableTiles(unit))
         {
@@ -334,6 +452,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    
     //ユニットのプレハブを取得
     GameObject GetPrefabUnit(int player, int type)
     {
@@ -347,4 +466,34 @@ public class GameManager : MonoBehaviour
 
         return prefab;
     }
+
+
+    //指定された配置でチェックされてるかを判定
+    static public List<UnitsController> GetCheckUnits(UnitsController[ , ] units ,
+                                                                      int player ,
+                                                             bool checking = true)
+    {
+        List<UnitsController> ret = new List<UnitsController>();
+
+        foreach (var unit in units)
+        {
+            if (null == unit)          continue;
+            if (player == unit.player) continue;
+
+            //敵 1体の移動可能範囲
+            List<Vector2Int> enemytiles = unit.GetMovableTiles(units, checking);
+
+            foreach(var enemyTile in enemytiles)
+            {
+                if (null == units[enemyTile.x, enemyTile.y]) continue;
+
+                if (UnitsController.TYPE.KING == units[enemyTile.x, enemyTile.y].type)
+                {
+                    ret.Add(unit);
+                }
+            }
+        }
+        return ret;
+    }
+
 }
