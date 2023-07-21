@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
@@ -18,7 +19,7 @@ public class GameManager : MonoBehaviour
 
 
     //内部データ
-    GameObject     [,] cells;
+    GameObject     [,] tiles;
     UnitsController[,] units;
 
 
@@ -26,6 +27,7 @@ public class GameManager : MonoBehaviour
     public List<GameObject> prefab_WhiteUnits;
     public List<GameObject> prefab_BlackUnits;
 
+    //盤面
     public int[,] unitsType =
     {
         { 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
@@ -82,32 +84,32 @@ public class GameManager : MonoBehaviour
 
 
         //内部データの初期化
-        cells   = new GameObject     [CELL_X, CELL_Y];
+        tiles   = new GameObject     [CELL_X, CELL_Y];
         units   = new UnitsController[CELL_X, CELL_Y];
         cursors = new List<GameObject>();
 
 
         //盤面を生成
-        for(var X_Axis = 0; X_Axis < CELL_X; X_Axis++)
+        for(var i = 0; i < CELL_X; i++)
         {
-            for (var Y_Axis = 0; Y_Axis < CELL_Y; Y_Axis++)
+            for (var j = 0; j < CELL_Y; j++)
             {
 
-                var x = X_Axis - CELL_X / 2;//横
-                var y = Y_Axis - CELL_Y / 2;//縦
+                var x = i - CELL_X / 2;//横
+                var y = j - CELL_Y / 2;//縦
 
 
-                var createPosition = new Vector3(x , 0 , y);
+                var createPosition = new Vector3(x , 0 , y);//奥行を指定したいからyをzに格納
 
                 //タイルを生成
-                var index = (X_Axis + Y_Axis) % 2;
+                var index = (i + j) % 2;
                 GameObject tiles = Instantiate(prefabTile[index] , createPosition , Quaternion.identity);
-                cells[X_Axis , Y_Axis] = tiles;
+                this.tiles[i, j] = tiles;
 
 
                 //ユニットを作成
-                var type   = unitsType[X_Axis, Y_Axis] % 10;
-                var player = unitsType[X_Axis, Y_Axis] / 10;
+                var type   = unitsType[i, j] % 10;
+                var player = unitsType[i, j] / 10;
 
                 GameObject prefab = GetPrefabUnit(player, type);
 
@@ -126,7 +128,7 @@ public class GameManager : MonoBehaviour
                 controller.SetUnit(player ,(UnitsController.TYPE)type, tiles);
 
                 //内部のデータセット
-                units[X_Axis, Y_Axis] = controller;
+                units[i, j] = controller;
             }
         }
 
@@ -179,9 +181,9 @@ public class GameManager : MonoBehaviour
          --------------------*/
         UnitsController target = GetUnit(currentPlayer ,UnitsController.TYPE.KING);
         //チェックしてるユニット
-        List<UnitsController> checkKunits = GetCheckUnits(units , currentPlayer);
+        List<UnitsController> checkunits = GetCheckUnits(units , currentPlayer);
 
-        bool isCheck = (0 < checkKunits.Count) ? true : false;
+        bool isCheck = (0 < checkunits.Count) ? true : false;
 
         //チェック状態をセット
         if(null != target)
@@ -195,7 +197,6 @@ public class GameManager : MonoBehaviour
             info.text = "チェック！！";
         }
 
-
         /*-------------------
          移動可能範囲の判定
          --------------------*/
@@ -206,13 +207,13 @@ public class GameManager : MonoBehaviour
             tileCount += GetMovableTiles(n).Count;
         }
 
-        //ステイルメイトの時の処理
-        if(1 > tileCount)
+        //動かせない
+        if (1 > tileCount)
         {
             info.text = $"ステイルメイト\n 引き分け～！";
 
             //もしチェックされて動けなかった時は、チェックメイト
-            if(isCheck)
+            if (isCheck)
             {
                 info.text = $"チェックメイト\n {GetNextPlayer() + 1} Pの勝利！!";
             }
@@ -227,8 +228,6 @@ public class GameManager : MonoBehaviour
             buttonApply .SetActive(true);
             buttonCancel.SetActive(true);
         }
-
-
     }
 
     //ノーマルモード
@@ -263,14 +262,16 @@ public class GameManager : MonoBehaviour
         Vector2Int tilepos = new Vector2Int((int)tile.transform.position.x + CELL_X / 2,
                                             (int)tile.transform.position.z + CELL_Y / 2);
 
-        //ユニットを取得
+        //ユニット
         unit = units[tilepos.x, tilepos.y];
 
 
         if (null != unit && selectUnit != unit && currentPlayer == unit.player)
         {
+            //移動可能範囲を取得
             List<Vector2Int> tiles = GetMovableTiles(unit);
 
+            //選択不可
             if (1 > tiles.Count) return;
 
 
@@ -289,6 +290,23 @@ public class GameManager : MonoBehaviour
     private void StatusUpdateMode()
     {
         //キャスティング
+
+        if(selectUnit.status.Contains(UnitsController.STATUS.QSIDE_CASTLINE))
+        {
+            //左端ルーク
+            var unit = units[0, selectUnit.position.x];
+            var tile = new Vector2Int(selectUnit.position.x + 1, selectUnit.position.y);
+
+            MoveUnit(unit, tile);
+        }
+        else if(selectUnit.status.Contains(UnitsController.STATUS.KSIDE_CASTLINE))
+        {
+            //右端ルーク
+            var unit = units[CELL_X - 1, selectUnit.position.y];
+            var tile = new Vector2Int(selectUnit.position.x - 1, selectUnit.position.y);
+
+            MoveUnit(unit , tile);
+        }
 
         //アンパッサン
 
@@ -328,7 +346,7 @@ public class GameManager : MonoBehaviour
     }
 
 
-    //指定のユニットだけ取得する。
+    //指定のユニットを取得する。
     UnitsController GetUnit(int player , UnitsController.TYPE type)
     {
         foreach (var n in GetUnits(player))
@@ -350,9 +368,9 @@ public class GameManager : MonoBehaviour
         {
             if (null == n) continue;
 
-            if (player == n.player) { ret.Add(n); }
+            if (player == n.player) { ret.Add(n);}
 
-            else if (0 > player)    { ret.Add(n); }
+            else if (0 > player)    { ret.Add(n);}
         }
         return ret;
     }
@@ -372,10 +390,12 @@ public class GameManager : MonoBehaviour
     {
         // チェックされてしまう場所には置かせない
         UnitsController[,] copyunits1 = GetCopyArracy(units);
+
         copyunits1[unit.position.x, unit.position.y] = null;
 
         //チェックされているかどうか
         List<UnitsController> checkunits = GetCheckUnits(copyunits1 , unit.player);
+
 
         //チェックを回避できるタイルを探す
         if(0 < checkunits.Count)
@@ -383,12 +403,13 @@ public class GameManager : MonoBehaviour
             //移動可能範囲
             List<Vector2Int> ret = new List<Vector2Int>();
 
-            List<Vector2Int> moveTile = unit.GetMovableTiles(units);
+            List<Vector2Int> moveTiles = unit.GetMovableTiles(units);
 
             //移動する
-            foreach(var n in moveTile)
+            foreach(var n in moveTiles)
             {
                 UnitsController[,] copyunits2 = GetCopyArracy(units);
+
                 copyunits2[unit.position.x, unit.position.y] = null;
                 copyunits2[n.x, n.y] = unit;
                 var checkCount = GetCheckUnits(copyunits2, unit.player, false).Count;
@@ -406,15 +427,18 @@ public class GameManager : MonoBehaviour
     //ユニットの移動
     void MoveUnit(UnitsController unit , Vector2Int tilepos)
     {
+        //現在地
         Vector2Int unitPosition = unit.position;
 
-
+        //消す処理
+        //TODO : 効果音を入れる
         if (null != units[tilepos.x, tilepos.y]) 
         {
             Destroy(units[tilepos.x, tilepos.y].gameObject);
         }
 
-        unit.MoveUnit(cells[tilepos.x, tilepos.y]);
+        //新しい場所に移動
+        unit.MoveUnit(tiles[tilepos.x, tilepos.y]);
 
 
         units[unitPosition.x, unitPosition.y] = null;
@@ -425,6 +449,7 @@ public class GameManager : MonoBehaviour
     //選択時の関数
     void SetSelectCursors(UnitsController unit = null , bool setUnit = true)
     {
+        //カーソル削除
         foreach (var n in cursors) { Destroy(n); }
 
         if(null != selectUnit)
@@ -435,10 +460,10 @@ public class GameManager : MonoBehaviour
 
         if (null == unit) { return; }
 
-
+        //カーソル作成
         foreach(var n in GetMovableTiles(unit))
         {
-            Vector3 position = cells[n.x, n.y].transform.position;
+            Vector3 position = tiles[n.x, n.y].transform.position;
             position.y += 0.07f;
 
             GameObject  obj = Instantiate(prefabCursor , position , Quaternion.identity);
@@ -470,18 +495,18 @@ public class GameManager : MonoBehaviour
 
     //指定された配置でチェックされてるかを判定
     static public List<UnitsController> GetCheckUnits(UnitsController[ , ] units ,
-                                                                      int player ,
-                                                             bool checking = true)
+                                                              int player,
+                                                             bool checkking = true)
     {
         List<UnitsController> ret = new List<UnitsController>();
 
-        foreach (var unit in units)
+        foreach (var n in units)
         {
-            if (null == unit)          continue;
-            if (player == unit.player) continue;
+            if (null == n)          continue;
+            if (player == n.player) continue;
 
             //敵 1体の移動可能範囲
-            List<Vector2Int> enemytiles = unit.GetMovableTiles(units, checking);
+            List<Vector2Int> enemytiles = n.GetMovableTiles(units, checkking);
 
             foreach(var enemyTile in enemytiles)
             {
@@ -489,11 +514,17 @@ public class GameManager : MonoBehaviour
 
                 if (UnitsController.TYPE.KING == units[enemyTile.x, enemyTile.y].type)
                 {
-                    ret.Add(unit);
+                    ret.Add(n);
                 }
             }
         }
         return ret;
+    }
+
+
+    public void Retry()
+    {
+        SceneManager.LoadScene("MainScene");
     }
 
 }
