@@ -202,7 +202,6 @@ public class UnitsController : MonoBehaviour
                     continue;
                 }
 
-
                 /*敵が居なかった時は移動できない、見方は対象外にする。*/
                 if (null == units[checkPosition.x, checkPosition.y]) continue;
                 if (player == units[checkPosition.x, checkPosition.y].player) continue;
@@ -490,12 +489,12 @@ public class UnitsController : MonoBehaviour
         }
     }
 
-
+    //相手のアンパッサン状態のユニットを返す。
     UnitsController GetEnPassantUnit(UnitsController[,] units, Vector2Int pos)
     {
         foreach (var n in units)
         {
-            if (null == n) continue;
+            if (null   == n)        continue;
             if (player == n.player) continue;
             if (!n.status.Contains(STATUS.EN_PASSANT)) continue;
 

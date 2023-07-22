@@ -30,14 +30,25 @@ public class GameManager : MonoBehaviour
     //盤面
     public int[,] unitsType =
     {
-        { 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
-        { 3 , 1 , 0 , 0 , 0 , 0 , 11 , 13 },
-        { 4 , 1 , 0 , 0 , 0 , 0 , 11 , 14 },
-        { 5 , 1 , 0 , 0 , 0 , 0 , 11 , 15 },
+        //{ 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
+        //{ 3 , 1 , 0 , 0 , 0 , 0 , 11 , 13 },
+        //{ 4 , 1 , 0 , 0 , 0 , 0 , 11 , 14 },
+        //{ 5 , 1 , 0 , 0 , 0 , 0 , 11 , 15 },
+        //{ 6 , 1 , 0 , 0 , 0 , 0 , 11 , 16 },
+        //{ 4 , 1 , 0 , 0 , 0 , 0 , 11 , 14 },
+        //{ 3 , 1 , 0 , 0 , 0 , 0 , 11 , 13 },
+        //{ 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
+
+        //キャスリング、チェックメイト、ステイルメイトのテスト用配置
+        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
+        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
+        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
+        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
         { 6 , 1 , 0 , 0 , 0 , 0 , 11 , 16 },
-        { 4 , 1 , 0 , 0 , 0 , 0 , 11 , 14 },
-        { 3 , 1 , 0 , 0 , 0 , 0 , 11 , 13 },
-        { 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
+        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
+        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
+        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
+
     };
 
     //UI関連
@@ -139,7 +150,7 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        if(MODE.CHECK_MATE         == currentMode)
+        if (MODE.CHECK_MATE         == currentMode)
         {
             CheckMateMode();
         }
@@ -289,12 +300,11 @@ public class GameManager : MonoBehaviour
     //移動後の処理
     private void StatusUpdateMode()
     {
-        //キャスティング
-
+        //キャスリング
         if(selectUnit.status.Contains(UnitsController.STATUS.QSIDE_CASTLINE))
         {
             //左端ルーク
-            var unit = units[0, selectUnit.position.x];
+            var unit = units[0, selectUnit.position.y];
             var tile = new Vector2Int(selectUnit.position.x + 1, selectUnit.position.y);
 
             MoveUnit(unit, tile);
@@ -308,9 +318,39 @@ public class GameManager : MonoBehaviour
             MoveUnit(unit , tile);
         }
 
-        //アンパッサン
+        //アンパッサンとプロモーション
+        if (UnitsController.TYPE.PAWN == selectUnit.type)
+        {
+            //アンパッサン
+            //ポーンが2マス進んだ場合、1マス後ろに残像が残るため取られる処理を書く。
 
-        //プロモーション
+            foreach(var n in GetUnits(GetNextPlayer()))
+            {
+                if (!n.status.Contains(UnitsController.STATUS.EN_PASSANT)) continue;
+
+                //置いた場所がアンパッサン対象か否か
+                if(selectUnit.position == n.oldPosition)
+                {
+                    Destroy(n.gameObject);
+                }
+            }
+
+            //プロモーション
+            var player = CELL_Y - 1;
+
+            if (selectUnit.player == 1) player = 0;
+
+            if(player == selectUnit.position.y)
+            {
+                //クイーン固定（いろんなユニットに変更できるみたいだけど、今回はクイーンのみにします。）
+                GameObject    prefab = GetPrefabUnit(currentPlayer , (int) UnitsController.TYPE.QUEEN);
+                UnitsController unit = Instantiate(prefab).GetComponent<UnitsController>();
+                GameObject      tile = tiles[selectUnit.position.x, selectUnit.position.y];
+
+                unit.SetUnit(selectUnit.player , UnitsController.TYPE.QUEEN , tile);
+                MoveUnit(unit , new Vector2Int(selectUnit.position.x , selectUnit.position.y));
+            }
+        }
 
         //ターン経過
         foreach(var n in GetUnits(currentPlayer))
@@ -525,6 +565,7 @@ public class GameManager : MonoBehaviour
     public void Retry()
     {
         SceneManager.LoadScene("MainScene");
+        
     }
 
 }
