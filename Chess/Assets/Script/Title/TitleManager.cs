@@ -8,9 +8,6 @@ public class TitleManager : MonoBehaviour
     //ゲーム全体のPlayer数
     static public int playerCount;
 
-    //Play人数
-    const int PLAYER_MAX = 2;
-
     //タイルのプレハブ,カーソルのプレハブ
     public GameObject[] prefabTile;
 
@@ -98,13 +95,13 @@ public class TitleManager : MonoBehaviour
 
     public void PvE()
     {
-        playerCount = 2;
+        playerCount = 1;
 
         SceneManager.LoadScene("MainScene");
     }
     public void EvE()
     {
-        playerCount = 2;
+        playerCount = 0;
 
         SceneManager.LoadScene("MainScene");
     }

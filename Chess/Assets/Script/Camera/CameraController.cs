@@ -35,7 +35,7 @@ public class CameraController : MonoBehaviour
         else if(Input.GetMouseButton(0))//‰Ÿ‚³‚ê‚Ä‚éŽž
         {
             var value = prevPosition.x - Input.mousePosition.x;
-            value *= -1; //‰ñ‚µ‚Ä‚é•ûŒü‚Æ‹tŒü‚«‚É‰ñ‚·‚Ì‚Å-1‚ðŠ|‚¯‚é
+            value *= -0.1f; //‰ñ‚µ‚Ä‚é•ûŒü‚Æ‹tŒü‚«‚É‰ñ‚·‚Ì‚Å-1‚ðŠ|‚¯‚é
 
             transform.RotateAround(lookAt_Camera , Vector3.up , value);
             prevPosition = Input.mousePosition;

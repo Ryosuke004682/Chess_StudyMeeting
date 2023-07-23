@@ -38,25 +38,14 @@ public class GameManager : MonoBehaviour
     //盤面
     public int[,] unitsType =
     {
-        //{ 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
-        //{ 3 , 1 , 0 , 0 , 0 , 0 , 11 , 13 },
-        //{ 4 , 1 , 0 , 0 , 0 , 0 , 11 , 14 },
-        //{ 5 , 1 , 0 , 0 , 0 , 0 , 11 , 15 },
-        //{ 6 , 1 , 0 , 0 , 0 , 0 , 11 , 16 },
-        //{ 4 , 1 , 0 , 0 , 0 , 0 , 11 , 14 },
-        //{ 3 , 1 , 0 , 0 , 0 , 0 , 11 , 13 },
-        //{ 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
-
-        //キャスリング、チェックメイト、ステイルメイトのテスト用配置
-        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
-        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
-        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
-        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
+        { 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
+        { 3 , 1 , 0 , 0 , 0 , 0 , 11 , 13 },
+        { 4 , 1 , 0 , 0 , 0 , 0 , 11 , 14 },
+        { 5 , 1 , 0 , 0 , 0 , 0 , 11 , 15 },
         { 6 , 1 , 0 , 0 , 0 , 0 , 11 , 16 },
-        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
-        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
-        { 0 , 1 , 0 , 0 , 0 , 0 , 11 , 0 },
-
+        { 4 , 1 , 0 , 0 , 0 , 0 , 11 , 14 },
+        { 3 , 1 , 0 , 0 , 0 , 0 , 11 , 13 },
+        { 2 , 1 , 0 , 0 , 0 , 0 , 11 , 12 },
     };
 
     //UI関連
@@ -326,6 +315,37 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        //コンピューター（ＣＰＵ）の処理
+        while (TitleManager.playerCount <= currentPlayer && (null == selectUnit || null == tile))
+        {
+
+            if (null == selectUnit)
+            {
+                //全ユニットを取得
+                List<UnitsController> tmpUnits = GetUnits(currentPlayer);
+                UnitsController tmp = tmpUnits[UnityEngine.Random.Range(0, tmpUnits.Count)];
+
+                //ユニットが居るタイルを選択
+                tile = tiles[tmp.position.x , tmp.position.y];
+
+                break;
+            }
+
+            //ここから下はSelectUnitが入った状態で来る
+            if( 1 > movableTiles.Count)
+            {
+                //非選択状態にして、処理を抜ける
+                SetSelectCursors();
+                break;
+            }
+
+            //移動可能範囲があれば、ランダムで動かす
+            var random = UnityEngine.Random.Range(0 , movableTiles.Count);
+            tile = tiles[movableTiles[random].x , movableTiles[random].y];
+
+        }
+            
+
         //タイル以外の場所は判定しない。
         if (null == tile) return;
 
@@ -349,10 +369,20 @@ public class GameManager : MonoBehaviour
             movableTiles = tiles;
             SetSelectCursors(unit);
         }
-        else if (null != selectUnit && movableTiles.Contains(tilepos))
+        else if (null != selectUnit && movableTiles.Contains(tilepos))//移動
         {
             MoveUnit(selectUnit, tilepos);
             nextMode = MODE.STATUS_UPDATE;
+        }
+        //自分のターンじゃないときに、敵の駒の移動範囲を見れるように設定
+        else if(null != unit && currentPlayer != unit.player)
+        {
+            SetSelectCursors(unit,false);//選択されずにカーソルだけ表示される
+        }
+        //カーソルが表示されてる時に、カーソルが表示されてないところを触った場合選択状態を解除
+        else
+        {
+            SetSelectCursors();
         }
     }
 
