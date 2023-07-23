@@ -9,9 +9,17 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    public const int CELL_X     = 8;
-    public const int CELL_Y     = 8;
-           const int PLAYER_MAX = 2;
+    //盤面生成
+    public const int CELL_X         = 8;
+    public const int CELL_Y         = 8;
+
+    //Play人数
+           const int PLAYER_MAX     = 2;
+
+    //ステイルメイト
+           const int LIMIT_TURN     = 50;//50ターンルール
+           const int RemainingLives = 2;//残機
+
 
     //タイルのプレハブ,カーソルのプレハブ
     public GameObject[] prefabTile;
@@ -80,6 +88,12 @@ public class GameManager : MonoBehaviour
     MODE currentMode, nextMode;
     int  currentPlayer;
 
+    //ユニットを削除してからの経過ターン
+    int unitsDestroyTurn;
+
+    //前回の盤面
+    List<UnitsController[,]> prevUnits;
+
 
     private void Start()
     {
@@ -95,9 +109,10 @@ public class GameManager : MonoBehaviour
 
 
         //内部データの初期化
-        tiles   = new GameObject     [CELL_X, CELL_Y];
-        units   = new UnitsController[CELL_X, CELL_Y];
-        cursors = new List<GameObject>();
+        tiles     = new GameObject     [CELL_X, CELL_Y];
+        units     = new UnitsController[CELL_X, CELL_Y];
+        cursors   = new List<GameObject>();
+        prevUnits = new List<UnitsController[,]>();
 
 
         //盤面を生成
@@ -187,6 +202,47 @@ public class GameManager : MonoBehaviour
         TODO : ステイルメイトの処理（引き分けの処理）
          --------------------*/
 
+        // 1 VS 1になった場合、 GetUnits().Countが 2 になったら引き分けにする。
+        if (RemainingLives == GetUnits().Count)
+        {
+            info.text = "進行不能により\nステイルメイト！！";
+            nextMode = MODE.RESULT;
+        }
+
+        //50ターンの間、誰も削除されなかった場合
+        if(LIMIT_TURN < unitsDestroyTurn)
+        {
+            info.text = "50ターンルールにより\nステイルメイト！！";
+            nextMode = MODE.RESULT;
+        }
+
+        //3回同じ盤面だった場合
+
+        int prevCount = 0;
+
+        foreach(var n in prevUnits)
+        {
+            bool check = true;
+
+            for(var i = 0; i < n.GetLength(0); i++)
+            {
+                for(var j = 0; j < n.GetLength(1); j++)
+                {
+                    if (n[i, j] != units[i, j]) check = false;
+                }
+            }
+
+            //チェックが終わった後に
+            if (check) prevCount++;
+        }
+
+        //同じ盤面が3回続いたかどうか
+        if(2 < prevCount)
+        {
+            info.text = "同じ盤面が３回続いたので\nステイルメイト！！";
+            nextMode = MODE.RESULT;
+        }
+
         /*-------------------
          チェックの判定
          --------------------*/
@@ -233,7 +289,11 @@ public class GameManager : MonoBehaviour
             nextMode = MODE.RESULT;
         }
 
-        //リザルトボタンとかを出す
+        UnitsController[,] copyunits = GetCopyArracy(units);
+        prevUnits.Add(copyunits);
+
+
+        //リザルトボタンとかを出す（次のモードの準備）
         if(MODE.RESULT == nextMode)
         {
             buttonApply .SetActive(true);
@@ -368,6 +428,12 @@ public class GameManager : MonoBehaviour
     {
         //ターンの処理
         currentPlayer = GetNextPlayer();
+
+        //Player1側に来たら、経過ターン+1する
+        if( 0 == currentPlayer)
+        {
+            unitsDestroyTurn++;
+        }
 
         //Infoの更新
         textTurnInfo.GetComponent<Text>().text = "" + (currentPlayer + 1) + "Pの番です。";
@@ -566,6 +632,13 @@ public class GameManager : MonoBehaviour
     {
         SceneManager.LoadScene("MainScene");
         
+    }
+
+
+    public void Title()
+    {
+        SceneManager.LoadScene("TitleScene");
+
     }
 
 }
