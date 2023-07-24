@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class UnitsController : MonoBehaviour
 {
@@ -19,6 +20,12 @@ public class UnitsController : MonoBehaviour
 
     //置いてる場所
     public Vector2Int position, oldPosition;
+
+
+    public AudioSource source;
+
+    public bool IsPlaySound = false;
+
 
     //駒の種類
     public enum TYPE
@@ -42,15 +49,23 @@ public class UnitsController : MonoBehaviour
         CHECK              ,
     }
 
+
     private void Start()
-    {
-        
-    }
+    {}
 
     private void Update()
     {
-        
+        if (progressTurnCount >= -1)
+        {
+            IsPlaySound = true;
+        }
+        else
+        {
+            IsPlaySound = false;
+        }
     }
+
+
 
     // 初期設定
     public void SetUnit(int player , TYPE type , GameObject tile)
@@ -60,7 +75,6 @@ public class UnitsController : MonoBehaviour
         MoveUnit(tile);
         progressTurnCount = -1;
     }
-
 
     //選択時の処理
     public void SelectUnit(bool select = true)
@@ -81,7 +95,7 @@ public class UnitsController : MonoBehaviour
 
 
     //移動可能範囲の取得
-    public List<Vector2Int> GetMovableTiles(UnitsController[ , ] units , bool checkking = true)
+    public List<Vector2Int> GetMovableTiles(UnitsController[,] units , bool checkking = true)
     {
         List<Vector2Int> ret = new List<Vector2Int>();
        
@@ -406,7 +420,7 @@ public class UnitsController : MonoBehaviour
         
 
     //移動可能範囲が配列内かどうか
-    bool IsCheckable(UnitsController[ , ] array , Vector2Int index)
+    bool IsCheckable(UnitsController[,] array , Vector2Int index)
     {
         //配列オーバーするパターン(Not Good Pattern)
         if (index.x < 0 || array.GetLength(0) <= index.x
@@ -467,17 +481,27 @@ public class UnitsController : MonoBehaviour
         }
 
         //インデックスの更新
-        oldPosition = position;
-        position = index;
+        oldPosition       = position;
+        position          = index;
         progressTurnCount = 0;
-    }
 
+
+        //インデックスの更新が終わったら、移動済みとみなし音を鳴らす。
+        if(IsPlaySound == true)
+        {
+            source.Play();
+            Debug.Log("呼ばれてるよ");
+        }
+    }
 
     //ターン数を加算する処理
     public void ProgressTurn()
     {
         if (0 > progressTurnCount) return;
         progressTurnCount++;
+
+        Debug.Log(progressTurnCount);
+
 
         //アンパッサンフラグチェック
         if (TYPE.PAWN == type)
