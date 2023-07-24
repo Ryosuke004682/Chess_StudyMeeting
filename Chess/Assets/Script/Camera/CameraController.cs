@@ -40,9 +40,5 @@ public class CameraController : MonoBehaviour
             transform.RotateAround(lookAt_Camera , Vector3.up , value);
             prevPosition = Input.mousePosition;
         }
-
-
     }
-
-
 }

@@ -6,6 +6,8 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
+using Image = UnityEngine.UI.Image;
 
 public class GameManager : MonoBehaviour
 {
@@ -25,10 +27,16 @@ public class GameManager : MonoBehaviour
     public GameObject[] prefabTile;
     public GameObject prefabCursor;
 
+    //チェックメイト、ステイルメイトの画像
+    public Image[] judgeMent;
+
 
     //内部データ
     GameObject     [,] tiles;
     UnitsController[,] units;
+
+    //シーンの遷移時間
+    public const int TRASITION_TIME = 2;
 
 
     //ユニットのプレハブ
@@ -92,6 +100,11 @@ public class GameManager : MonoBehaviour
         buttonApply    = GameObject.Find("ButtonApply")   ;
         buttonCancel   = GameObject.Find("ButtonCancel")  ;
 
+        judgeMent[0].enabled = false;
+        judgeMent[1].enabled = false;
+        judgeMent[2].enabled = false;
+
+
         //リザルト関連は非表示にする。
         buttonApply .SetActive(false);
         buttonCancel.SetActive(false);
@@ -152,6 +165,7 @@ public class GameManager : MonoBehaviour
         nextMode      = MODE.TURN_CHANGE;
     }
 
+
     private void Update()
     {
         if (MODE.CHECK_MATE         == currentMode)
@@ -179,6 +193,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
     //チェックメイトモード
     void CheckMateMode()
     {
@@ -194,15 +209,18 @@ public class GameManager : MonoBehaviour
         // 1 VS 1になった場合、 GetUnits().Countが 2 になったら引き分けにする。
         if (RemainingLives == GetUnits().Count)
         {
-            info.text = "進行不能により\nステイルメイト！！";
+            info.text = "進行不能により試合終了!!";
             nextMode = MODE.RESULT;
+
+            judgeMent[0].enabled = true;
         }
 
         //50ターンの間、誰も削除されなかった場合
         if(LIMIT_TURN < unitsDestroyTurn)
         {
-            info.text = "50ターンルールにより\nステイルメイト！！";
+            info.text = "50ターンルールで試合終了!!";
             nextMode = MODE.RESULT;
+            judgeMent[0].enabled = true;
         }
 
         //3回同じ盤面だった場合
@@ -228,8 +246,10 @@ public class GameManager : MonoBehaviour
         //同じ盤面が3回続いたかどうか
         if(2 < prevCount)
         {
-            info.text = "同じ盤面が３回続いたので\nステイルメイト！！";
+            info.text = "同じ盤面が３回続いたので試合終了!!";
             nextMode = MODE.RESULT;
+
+            judgeMent[0].enabled = true;
         }
 
         /*-------------------
@@ -250,7 +270,11 @@ public class GameManager : MonoBehaviour
         //ゲームが続くならチェックと表示
         if(isCheck && MODE.RESULT != nextMode)
         {
-            info.text = "チェック！！";
+            judgeMent[2].enabled = true;
+        }
+        else
+        {
+            judgeMent[2].enabled = false;
         }
 
         /*-------------------
@@ -266,12 +290,16 @@ public class GameManager : MonoBehaviour
         //動かせない
         if (1 > tileCount)
         {
-            info.text = $"ステイルメイト\n 引き分け～！";
+            judgeMent[0].enabled = true;
 
             //もしチェックされて動けなかった時は、チェックメイト
             if (isCheck)
             {
-                info.text = $"チェックメイト\n {GetNextPlayer() + 1} Pの勝利！!";
+                info.text = $"Player{GetNextPlayer() + 1} の勝利！!";
+
+                judgeMent[0].enabled = false;
+                judgeMent[1].enabled = true;
+                judgeMent[2].enabled = false;
             }
 
             //チェックメイト後は、ゲーム辞退が終わりだから
@@ -289,6 +317,7 @@ public class GameManager : MonoBehaviour
             buttonCancel.SetActive(true);
         }
     }
+
 
     //ノーマルモード
     private void NormalMode()
@@ -453,6 +482,7 @@ public class GameManager : MonoBehaviour
         nextMode = MODE.TURN_CHANGE;
     }
 
+
     //ターン変更
     private void TurnChangeMode()
     {
@@ -471,8 +501,9 @@ public class GameManager : MonoBehaviour
         nextMode = MODE.CHECK_MATE;
     }
 
+
     //ターンの加算処理
-    int GetNextPlayer()
+    public int GetNextPlayer()
     {
         var next = currentPlayer + 1;
 
@@ -510,6 +541,7 @@ public class GameManager : MonoBehaviour
         }
         return ret;
     }
+
 
     //指定された配列をコピーして返す。
     public static UnitsController[,] GetCopyArracy(UnitsController[,] org)
@@ -660,15 +692,26 @@ public class GameManager : MonoBehaviour
 
     public void Retry()
     {
-        SceneManager.LoadScene("MainScene");
-        
+        StartCoroutine(Transition_Retry());
     }
 
 
     public void Title()
     {
-        SceneManager.LoadScene("TitleScene");
-
+        StartCoroutine(Transition_Title());
     }
 
+
+    IEnumerator Transition_Retry()
+    {
+        yield return new WaitForSeconds(TRASITION_TIME);
+        SceneManager.LoadScene("MainScene");
+    }
+
+
+    IEnumerator Transition_Title()
+    {
+        yield return new WaitForSeconds(TRASITION_TIME);
+        SceneManager.LoadScene("TitleScene");
+    }
 }

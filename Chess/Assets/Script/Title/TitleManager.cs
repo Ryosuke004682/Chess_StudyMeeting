@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static System.TimeZoneInfo;
 
 public class TitleManager : MonoBehaviour
 {
@@ -14,6 +16,7 @@ public class TitleManager : MonoBehaviour
     //ユニットのプレハブ
     public List<GameObject> prefab_WhiteUnits;
     public List<GameObject> prefab_BlackUnits;
+
 
     //盤面
     public int[,] unitsType =
@@ -90,22 +93,24 @@ public class TitleManager : MonoBehaviour
     {
         playerCount = 2;
 
-        SceneManager.LoadScene("MainScene");
+        StartCoroutine(Transition());
     }
 
     public void PvE()
     {
         playerCount = 1;
-
-        SceneManager.LoadScene("MainScene");
+        StartCoroutine(Transition());
     }
     public void EvE()
     {
         playerCount = 0;
-
-        SceneManager.LoadScene("MainScene");
+        StartCoroutine(Transition());
     }
 
-
+    IEnumerator Transition()
+    {
+        yield return new WaitForSeconds(GameManager.TRASITION_TIME);
+        SceneManager.LoadScene("MainScene");
+    }
 
 }
