@@ -24,3 +24,9 @@
 （ゲームエンジン）Unity   
 （統合開発環境）VisualStudio2022   
 （言語）C#  
+---　　
+
+完成動画  
+https://youtu.be/OZkqlSvg3fs  
+
+※音や、BGMは課題です。各自実装の挑戦をしてみましょう！
